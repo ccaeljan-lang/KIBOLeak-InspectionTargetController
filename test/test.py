@@ -47,7 +47,7 @@ async def reset(dut):
 
 async def start(dut):
     # If the template's test.py uses `units="us"`, change `unit` below to match.
-    cocotb.start_soon(Clock(dut.clk, 10, unit="us").start())
+    cocotb.start_soon(Clock(dut.clk, 10, units="us").start())
     await reset(dut)
 
 
