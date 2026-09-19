@@ -251,7 +251,7 @@ module tt_um_kibo_leak_inspect (
     wire       in_x   = (hpos[5:0] >= 6'd4) && (hpos[5:0] <= 6'd59);
     wire       in_y   = (vpos[5:0] >= 6'd4) && (vpos[5:0] <= 6'd59);
     wire       band_y = (vpos[5:0] >= 6'd8) && (vpos[5:0] <= 6'd55);
-    wire       cell   = col_ok && in_x && in_y;
+    wire       in_cell   = col_ok && in_x && in_y;
     wire [2:0] i3     = idx[2:0];
 
     reg [5:0] pix;
@@ -263,23 +263,23 @@ module tt_um_kibo_leak_inspect (
                 4'd0: if (col_ok && band_y)
                           pix = (state == ABORT && !blink) ? C_DARKRED : state_color(state);
 
-                4'd1: if (cell)
+                4'd1: if (in_cell)
                           pix = (i3 == state) ? state_color(state) : C_DIM;
 
-                4'd2: if (cell)
+                4'd2: if (in_cell)
                           pix = inputs[i3] ? ((i3 == 3'd5 || i3 == 3'd6) ? C_RED : C_WHITE)
                                            : C_DIM;
 
-                4'd3: if (cell && idx < 4'd7)
+                4'd3: if (in_cell && idx < 4'd7)
                           pix = (i3 == move_cmd) ? ((i3 == 3'd0) ? C_WHITE : C_CYAN)
                                                  : C_DIM;
 
-                4'd4: if (cell && idx < 4'd4)
+                4'd4: if (in_cell && idx < 4'd4)
                           pix = (i3[1:0] == align_cmd)
                                 ? ((align_cmd == 2'b11) ? C_GREEN : C_YELLOW)
                                 : C_DIM;
 
-                4'd5: if (cell && idx < 4'd3) begin
+                4'd5: if (in_cell && idx < 4'd3) begin
                           case (i3[1:0])
                               2'd0:    pix = inspect_enable ? C_MAGENTA : C_DIM;
                               2'd1:    pix = target_locked  ? C_GREEN   : C_DIM;
@@ -287,7 +287,7 @@ module tt_um_kibo_leak_inspect (
                           endcase
                       end
 
-                4'd6: if (cell && idx < 4'd7) begin
+                4'd6: if (in_cell && idx < 4'd7) begin
                           if (state == ABORT)         pix = C_RED;
                           else if (state == COMPLETE) pix = C_GREEN;
                           else                        pix = (state > i3) ? C_CYAN : C_DIM;
