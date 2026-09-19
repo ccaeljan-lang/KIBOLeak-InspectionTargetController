@@ -67,20 +67,6 @@ Rows on the screen, top to bottom (no text, so rows are identified by position):
 - **VGA** on `uo[7:0]` in the Tiny VGA PMOD order: `hsync, B0, G0, R0, vsync, B1, G1, R1`
 - **Status** on `uio[2:0]` (state, 0 to 7), `uio[3]` inspecting, `uio[4]` abort, `uio[5]` target locked
 
-## Running the tests
-
-```sh
-cd test
-pip install -r requirements.txt
-make -B
-```
-
-Needs Python 3, cocotb and Icarus Verilog. See [docs/info.md](docs/info.md) for more detail.
-
-## Limitations
-
-Alignment uses simple yes/no flags. A more realistic version would take signed position and rotation errors and decide which way to move.
-
 ## Routing stats
 
 | Utilisation (%) | Wire length (um) |
