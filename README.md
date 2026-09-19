@@ -108,8 +108,11 @@ Rows on the screen, top to bottom (no text, so rows are identified by position):
 
 ## 2D Viewer
 
-[View the layout in 2D](https://ccaeljan-lang.github.io/KIBOLeak-InspectionTargetController/)
+<img width="2021" height="1550" alt="Cristobal_2D_View_KIBOLeak-InspectionTargetController" src="https://github.com/user-attachments/assets/73808b4a-5448-4550-b9cb-09637e2c3170" />
 
 ## 3D Viewer
 
-[View the layout in 3D](https://ccaeljan-lang.github.io/KIBOLeak-InspectionTargetController/)
+[View the layout in 3D](https://gds-viewer.tinytapeout.com/?model=https://ccaeljan-lang.github.io/KIBOLeak-InspectionTargetController/tinytapeout.oas&pdk=ihp-sg13g2)
+
+<img width="780" height="647" alt="Screenshot 2026-09-19 at 4 57 07 PM" src="https://github.com/user-attachments/assets/46c12b00-195b-4cb3-95a9-f3e9016fc626" />
+
