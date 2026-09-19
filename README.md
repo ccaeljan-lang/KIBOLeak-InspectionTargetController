@@ -1,42 +1,113 @@
-![](../../workflows/gds/badge.svg) ![](../../workflows/docs/badge.svg) ![](../../workflows/test/badge.svg) ![](../../workflows/fpga/badge.svg)
-
 # KIBO Leak-Inspection Target Controller
 
-- [Read the documentation for project](docs/info.md)
+![gds](../../workflows/gds/badge.svg) ![docs](../../workflows/docs/badge.svg) ![test](../../workflows/test/badge.svg)
 
-## What is Tiny Tapeout?
+A small hardware finite-state machine (FSM), written in Verilog for [Tiny Tapeout](https://tinytapeout.com), that decides when an autonomous inspection robot should **approach, align with, hold at, inspect, or abort** on a suspected leak-inspection target.
 
-Tiny Tapeout is an educational project that aims to make it easier and cheaper than ever to get your digital and analog designs manufactured on a real chip.
+It is modelled on the kind of task performed by free-flying robots such as Int-Ball2 on the Kibo module of the ISS, and is inspired by the Kibo-RPC challenge. Sensor inputs are simplified to single-bit flags.
 
-To learn more and get started, visit https://tinytapeout.com.
+- [Full datasheet](docs/info.md)
 
-## Set up your Verilog project
+## How it works
 
-1. Add your Verilog files to the `src` folder.
-2. Edit the [info.yaml](info.yaml) and update information about your project, paying special attention to the `source_files` and `top_module` properties. If you are upgrading an existing Tiny Tapeout project, check out our [online info.yaml migration tool](https://tinytapeout.github.io/tt-yaml-upgrade-tool/).
-3. Edit [docs/info.md](docs/info.md) and add a description of your project.
-4. Adapt the testbench to your design. See [test/README.md](test/README.md) for more information.
+The controller is a Moore FSM with 8 states. The current state is visible on `uio[2:0]`.
 
-The GitHub action will automatically build the ASIC files using [LibreLane](https://www.zerotoasiccourse.com/terminology/librelane/).
+```
+IDLE -> SEARCH -> APPROACH -> ALIGN -> HOLD -> INSPECT -> COMPLETE
+  ^         ^                                                |
+  |         +---------------- new_target = 1 ---------------+
+  +------------------------ new_target = 0 -----------------+
 
-## Enable GitHub actions to build the results page
+any state --(system_fault | obstacle_detected)--> ABORT (latched until reset)
+```
 
-- [Enabling GitHub Pages](https://tinytapeout.com/faq/#my-github-action-is-failing-on-the-pages-part)
+| Code | State      | Behaviour                                                  |
+| ---- | ---------- | ---------------------------------------------------------- |
+| 000  | `IDLE`     | Waits for `target_detected`                                |
+| 001  | `SEARCH`   | Waits for `target_detected` to confirm a target            |
+| 010  | `APPROACH` | Commands `MOVE_FORWARD` until `target_reached`             |
+| 011  | `ALIGN`    | Corrects position and orientation until both are aligned   |
+| 100  | `HOLD`     | Holds position for 3 clock cycles (internal counter)       |
+| 101  | `INSPECT`  | Asserts `inspect_enable` until `inspection_done`           |
+| 110  | `COMPLETE` | Asserts `target_locked`; `new_target` -> `SEARCH`, else `IDLE` |
+| 111  | `ABORT`    | Asserts `abort_cmd`, stops all motion, latched until reset |
 
-## Resources
+**Safety has the highest priority.** A fault or obstacle sends the FSM to `ABORT` from any state, even if `inspection_done` arrives in the same cycle.
 
-- [FAQ](https://tinytapeout.com/faq/)
-- [Digital design lessons](https://tinytapeout.com/digital_design/)
-- [Learn how semiconductors work](https://tinytapeout.com/siliwiz/)
-- [Join the community](https://tinytapeout.com/discord)
-- [Build your design locally](https://www.tinytapeout.com/guides/local-hardening/)
+## Pinout
 
-## What next?
+### Inputs (`ui_in`)
 
-- [Submit your design to the next shuttle](https://app.tinytapeout.com/).
-- Edit [this README](README.md) and explain your design, how it works, and how to test it.
-- Share your project on your social network of choice:
-  - LinkedIn [#tinytapeout](https://www.linkedin.com/search/results/content/?keywords=%23tinytapeout) [@TinyTapeout](https://www.linkedin.com/company/100708654/)
-  - Mastodon [#tinytapeout](https://chaos.social/tags/tinytapeout) [@matthewvenn](https://chaos.social/@matthewvenn)
-  - X (formerly Twitter) [#tinytapeout](https://twitter.com/hashtag/tinytapeout) [@tinytapeout](https://twitter.com/tinytapeout)
-  - Bluesky [@tinytapeout.com](https://bsky.app/profile/tinytapeout.com)
+| Pin     | Signal                |
+| ------- | --------------------- |
+| `ui[0]` | `target_detected`     |
+| `ui[1]` | `target_reached`      |
+| `ui[2]` | `position_aligned`    |
+| `ui[3]` | `orientation_aligned` |
+| `ui[4]` | `inspection_done`     |
+| `ui[5]` | `obstacle_detected`   |
+| `ui[6]` | `system_fault`        |
+| `ui[7]` | `new_target`          |
+
+### Outputs (`uo_out`)
+
+| Pin         | Signal           |
+| ----------- | ---------------- |
+| `uo[2:0]`   | `move_cmd`       |
+| `uo[4:3]`   | `align_cmd`      |
+| `uo[5]`     | `inspect_enable` |
+| `uo[6]`     | `abort_cmd`      |
+| `uo[7]`     | `target_locked`  |
+| `uio[2:0]`  | `state` (debug)  |
+
+### Command encodings
+
+| `move_cmd` | Meaning   | `align_cmd` | Meaning        |
+| ---------- | --------- | ----------- | -------------- |
+| `000`      | STOP      | `00`        | NO_ALIGNMENT   |
+| `001`      | FORWARD   | `01`        | ROTATE_LEFT    |
+| `010`      | BACKWARD  | `10`        | ROTATE_RIGHT   |
+| `011`      | LEFT      | `11`        | ALIGNED        |
+| `100`      | RIGHT     |             |                |
+| `101`      | UP        |             |                |
+| `110`      | DOWN      |             |                |
+
+`rst_n` is the Tiny Tapeout active-low reset.
+
+## Repository layout
+
+```
+.
+├── info.yaml        Tiny Tapeout project description and pinout
+├── src/
+│   └── project.v    FSM (top module: tt_um_kibo_leak_inspect)
+├── docs/
+│   └── info.md      Datasheet text
+└── test/
+    ├── test.py      cocotb tests
+    ├── tb.v         Testbench wrapper
+    ├── Makefile
+    └── requirements.txt
+```
+
+## Running the tests
+
+Requires Python 3, [cocotb](https://www.cocotb.org/) and [Icarus Verilog](https://steveicarus.github.io/iverilog/).
+
+```sh
+cd test
+pip install -r requirements.txt
+make -B
+```
+
+The tests cover the full happy path, `new_target` returning to `SEARCH`, abort priority over `COMPLETE`, abort latching until reset, and a fault raised from `IDLE`. Simulation writes a waveform to `test/tb.fst`, viewable with [GTKWave](https://gtkwave.sourceforge.net/) or [Surfer](https://surfer-project.org/).
+
+## Known limitations and ideas
+
+- Alignment uses single-bit flags. The `ALIGN` corrections are placeholders; a more realistic version would take signed `x/y/z` and `roll/pitch/yaw` error values and choose move and rotate commands from them.
+- Target loss during `APPROACH` and `ALIGN` is not handled.
+- No display output. A VGA status view is a possible extension.
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).
