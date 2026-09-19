@@ -16,32 +16,37 @@ It also draws its status on a VGA monitor, so you can watch each step happen liv
 
 ## How it works
 
-You control it with 8 switches, and the circuit steps through these states:
+The screen shows the controller live. In [VGA Playground](https://vga-playground.com/?repo=https://github.com/ccaeljan-lang/KIBOLeak-InspectionTargetController), the 8 **`ui_in` buttons above the display** act as the robot's sensors, and the circuit steps through these states as you press them:
 
 ```
 IDLE -> SEARCH -> APPROACH -> ALIGN -> HOLD -> INSPECT -> COMPLETE
 ```
 
-| Switch  | Name                  | What it does                                   |
+| Button  | Name                  | What it does                                   |
 | ------- | --------------------- | ---------------------------------------------- |
-| `ui[0]` | `target_detected`     | A target has been spotted: start the mission   |
-| `ui[1]` | `target_reached`      | The robot is close enough to the target        |
-| `ui[2]` | `position_aligned`    | Position is within tolerance                   |
-| `ui[3]` | `orientation_aligned` | Orientation is within tolerance                |
-| `ui[4]` | `inspection_done`     | The inspection is finished                     |
-| `ui[5]` | `obstacle_detected`   | Something is in the way: **abort**             |
-| `ui[6]` | `system_fault`        | Critical fault: **abort**                      |
-| `ui[7]` | `new_target`          | After finishing, go look for another target    |
+| `ui_in[0]` | `target_detected`     | A target has been spotted: start the mission   |
+| `ui_in[1]` | `target_reached`      | The robot is close enough to the target        |
+| `ui_in[2]` | `position_aligned`    | Position is within tolerance                   |
+| `ui_in[3]` | `orientation_aligned` | Orientation is within tolerance                |
+| `ui_in[4]` | `inspection_done`     | The inspection is finished                     |
+| `ui_in[5]` | `obstacle_detected`   | Something is in the way: **abort**             |
+| `ui_in[6]` | `system_fault`        | Critical fault: **abort**                      |
+| `ui_in[7]` | `new_target`          | After finishing, go look for another target    |
 
 - **Safety comes first.** An obstacle or fault stops everything immediately, from any state, and only a reset clears it.
-- Once the inspection is done the robot returns to `IDLE`, or back to `SEARCH` if `new_target` is on.
+- **Watchable speed.** The circuit moves to the next state about 4 times a second (once every 16 video frames), so keep a button pressed until the highlighted box moves on.
+- After the inspection the robot returns to `IDLE`, or back to `SEARCH` if `new_target` is on.
 
 ## How to use it
 
-1. Connect a Tiny VGA PMOD and a monitor, and set the clock to **25.175 MHz**.
-2. Pulse `rst_n` low then high. The IDLE box lights up.
-3. Turn on the switches in order: `ui[0]`, then `ui[1]`, then `ui[2]` and `ui[3]` together, then `ui[4]`.
-4. Watch the screen move through each state. Turn on `ui[5]` or `ui[6]` at any time to see the abort.
+1. Open the [VGA Playground link](https://vga-playground.com/?repo=https://github.com/ccaeljan-lang/KIBOLeak-InspectionTargetController). The design starts in **IDLE** (the first state box is lit).
+2. Press `ui_in[0]` (target detected). The screen moves to **SEARCH**, then **APPROACH**.
+3. Press `ui_in[1]` (target reached). It moves to **ALIGN**.
+4. Press `ui_in[2]` and `ui_in[3]` (position and orientation aligned). It moves to **HOLD**, then **INSPECT**.
+5. Press `ui_in[4]` (inspection done). It moves to **COMPLETE**, then back to **IDLE**.
+6. At any point press `ui_in[5]` or `ui_in[6]` to see the **ABORT** state. The banner blinks red until you restart the simulation.
+
+On a real Tiny Tapeout board the same 8 signals are the `ui` pins: connect a Tiny VGA PMOD and monitor, set the clock to **25.175 MHz**, and use switches in place of the playground buttons.
 
 ## The display
 
