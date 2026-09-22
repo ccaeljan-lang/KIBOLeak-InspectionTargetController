@@ -1,8 +1,8 @@
 # Tiny Tapeout project information
 project:
-  title: "KIBO Leak-Inspection Target Controller (VGA)"
-  author: "Your Name"
-  discord: ""
+  title: "KIBO Leak-Inspection Target Controller"
+  author: "Caeljan Cristobal"
+  discord: "ccaeljan-lang"
   description: "8-state leak-inspection approach/align/inspect FSM with a live 640x480 VGA status display and a latched safety abort."
   language: "Verilog"
   clock_hz: 25175000
